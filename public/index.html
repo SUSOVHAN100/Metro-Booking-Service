@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moveinsync Metro Booking Service</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <i class="fas fa-subway"></i>
+                <span>Moveinsync Metro</span>
+            </div>
+            <div class="nav-links">
+                <a href="#booking" class="active">Book Ticket</a>
+                <a href="#routes">Metro Routes</a>
+                <a href="#my-bookings">My Bookings</a>
+                <a href="#profile">Profile</a>
+                <a href="#admin">Admin</a>
+            </div>
+            <div class="user-profile" id="userProfile">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <!-- Booking Section -->
+        <section id="booking" class="section active">
+            <div class="container">
+                <h2><i class="fas fa-ticket-alt"></i> Book Your Metro Ticket</h2>
+                
+                <div class="booking-container">
+                    <div class="booking-form">
+                        <div class="form-group">
+                            <label for="source"><i class="fas fa-circle"></i> Source Station</label>
+                            <select id="source" required>
+                                <option value="">Select source station</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="destination"><i class="fas fa-location-dot"></i> Destination Station</label>
+                            <select id="destination" required>
+                                <option value="">Select destination station</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="optimization"><i class="fas fa-chart-line"></i> Optimization Strategy</label>
+                            <select id="optimization">
+                                <option value="minTime">Minimum Travel Time</option>
+                                <option value="minTransfers">Minimum Transfers</option>
+                                <option value="minStops">Minimum Stops</option>
+                            </select>
+                        </div>
+
+                        <button id="findRoute" class="btn-primary">
+                            <i class="fas fa-route"></i> Find Route & Book
+                        </button>
+                    </div>
+
+                    <div class="booking-status" id="bookingStatus"></div>
+                </div>
+
+                <div class="route-visualization" id="routeVisualization" style="display: none;">
+                    <h3><i class="fas fa-map"></i> Your Journey Route</h3>
+                    <div id="routeSegments"></div>
+                    
+                    <div class="journey-summary">
+                        <div class="summary-card">
+                            <i class="fas fa-clock"></i>
+                            <span class="label">Travel Time</span>
+                            <span class="value" id="travelTime">0 min</span>
+                        </div>
+                        <div class="summary-card">
+                            <i class="fas fa-exchange-alt"></i>
+                            <span class="label">Transfers</span>
+                            <span class="value" id="transfers">0</span>
+                        </div>
+                        <div class="summary-card">
+                            <i class="fas fa-subway"></i>
+                            <span class="label">Stops</span>
+                            <span class="value" id="totalStops">0</span>
+                        </div>
+                    </div>
+
+                    <div class="qr-section" id="qrSection" style="display: none;">
+                        <h4><i class="fas fa-qrcode"></i> Your QR Code</h4>
+                        <div class="qr-container">
+                            <div class="qr-placeholder" id="qrDisplay">
+                                <!-- QR will be generated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Routes Section -->
+        <section id="routes" class="section">
+            <div class="container">
+                <h2><i class="fas fa-map"></i> Metro Routes</h2>
+                
+                <div class="routes-grid" id="routesGrid">
+                    <!-- Routes will be loaded here -->
+                    <div class="loading">Loading routes...</div>
+                </div>
+
+                <div class="route-details" id="routeDetails" style="display: none;">
+                    <h3>Route Details</h3>
+                    <div id="routeStops"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- My Bookings Section -->
+        <section id="my-bookings" class="section">
+            <div class="container">
+                <h2><i class="fas fa-history"></i> My Bookings</h2>
+                
+                <div class="bookings-list" id="bookingsList">
+                    <!-- Bookings will be loaded here -->
+                    <div class="loading">Loading bookings...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Profile Section -->
+        <section id="profile" class="section">
+            <div class="container">
+                <h2><i class="fas fa-user-circle"></i> My Profile</h2>
+                
+                <div class="profile-container">
+                    <div class="profile-sidebar">
+                        <div class="profile-avatar">
+                            <img id="profileAvatar" src="https://ui-avatars.com/api/?name=User&background=667eea&color=fff" alt="Profile">
+                            <button class="avatar-edit" onclick="triggerAvatarUpload()">
+                                <i class="fas fa-camera"></i>
+                            </button>
+                            <input type="file" id="avatarUpload" accept="image/*" style="display: none;">
+                        </div>
+                        <h3 id="profileName">Loading...</h3>
+                        <p id="profileEmail">Loading...</p>
+                        <div class="profile-badge" id="profileBadge"></div>
+                        
+                        <div class="profile-stats">
+                            <div class="stat-item">
+                                <span class="stat-label">Total Trips</span>
+                                <span class="stat-value" id="totalTrips">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Member Since</span>
+                                <span class="stat-value" id="memberSince">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Last Active</span>
+                                <span class="stat-value" id="lastActive">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="profile-main">
+                        <div class="profile-tabs">
+                            <button class="profile-tab-btn active" onclick="showProfileTab('details')">
+                                <i class="fas fa-info-circle"></i> Personal Info
+                            </button>
+                            <button class="profile-tab-btn" onclick="showProfileTab('security')">
+                                <i class="fas fa-shield-alt"></i> Security
+                            </button>
+                            <button class="profile-tab-btn" onclick="showProfileTab('preferences')">
+                                <i class="fas fa-sliders-h"></i> Preferences
+                            </button>
+                            <button class="profile-tab-btn" onclick="showProfileTab('activity')">
+                                <i class="fas fa-chart-line"></i> Activity
+                            </button>
+                        </div>
+                        
+                        <!-- Personal Info Tab -->
+                        <div id="profileDetails" class="profile-tab-content active">
+                            <form id="profileForm" onsubmit="updateProfile(event)">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label><i class="fas fa-user"></i> Full Name</label>
+                                        <input type="text" id="profileFullName" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label><i class="fas fa-envelope"></i> Email</label>
+                                        <input type="email" id="profileEmailInput" readonly disabled>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label><i class="fas fa-phone"></i> Phone Number</label>
+                                        <input type="tel" id="profilePhone" placeholder="Enter phone number">
+                                    </div>
+                                    <div class="form-group">
+                                        <label><i class="fas fa-id-card"></i> User ID</label>
+                                        <input type="text" id="profileUserId" readonly disabled>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label><i class="fas fa-globe"></i> Auth Provider</label>
+                                        <input type="text" id="profileAuthProvider" readonly disabled>
+                                    </div>
+                                    <div class="form-group">
+                                        <label><i class="fas fa-tag"></i> Role</label>
+                                        <input type="text" id="profileRole" readonly disabled>
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="btn-primary">
+                                    <i class="fas fa-save"></i> Update Profile
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <!-- Security Tab -->
+                        <div id="profileSecurity" class="profile-tab-content">
+                            <div class="security-section">
+                                <h4><i class="fas fa-key"></i> Change Password</h4>
+                                <form id="passwordForm" onsubmit="changePassword(event)">
+                                    <div class="form-group">
+                                        <label>Current Password</label>
+                                        <input type="password" id="currentPassword" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>New Password</label>
+                                        <input type="password" id="newPassword" required minlength="6">
+                                        <small>Minimum 6 characters</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Confirm New Password</label>
+                                        <input type="password" id="confirmPassword" required>
+                                    </div>
+                                    <button type="submit" class="btn-primary">Update Password</button>
+                                </form>
+                            </div>
+                            
+                            <div class="security-section">
+                                <h4><i class="fas fa-shield-alt"></i> Two-Factor Authentication</h4>
+                                <div class="twofa-status">
+                                    <i class="fas fa-shield-alt"></i>
+                                    <span>Status: <span id="twoFAStatus">Disabled</span></span>
+                                    <button class="btn-secondary" onclick="toggle2FA()">Enable</button>
+                                </div>
+                            </div>
+                            
+                            <div class="security-section">
+                                <h4><i class="fas fa-laptop"></i> Active Sessions</h4>
+                                <div class="sessions-list" id="sessionsList">
+                                    <div class="session-item current">
+                                        <i class="fas fa-laptop"></i>
+                                        <div class="session-info">
+                                            <strong>Current Session</strong>
+                                            <span>Chrome on Windows • Now</span>
+                                        </div>
+                                        <span class="session-badge">Active</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Preferences Tab -->
+                        <div id="profilePreferences" class="profile-tab-content">
+                            <div class="preferences-section">
+                                <h4><i class="fas fa-sliders-h"></i> Travel Preferences</h4>
+                                
+                                <div class="preference-item">
+                                    <label>Default Optimization</label>
+                                    <select id="prefOptimization">
+                                        <option value="minTime">Minimum Travel Time</option>
+                                        <option value="minTransfers">Minimum Transfers</option>
+                                        <option value="minStops">Minimum Stops</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="preference-item">
+                                    <label>Preferred Route</label>
+                                    <select id="prefRoute">
+                                        <option value="any">Any Route</option>
+                                        <option value="R001">Yellow Line</option>
+                                        <option value="R002">Blue Line</option>
+                                        <option value="R003">Violet Line</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="preference-item">
+                                    <label>Notifications</label>
+                                    <div class="checkbox-group">
+                                        <label>
+                                            <input type="checkbox" id="notifEmail" checked>
+                                            Email Notifications
+                                        </label>
+                                        <label>
+                                            <input type="checkbox" id="notifSMS">
+                                            SMS Notifications
+                                        </label>
+                                        <label>
+                                            <input type="checkbox" id="notifPromo" checked>
+                                            Promotional Updates
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <button class="btn-primary" onclick="savePreferences()">
+                                    <i class="fas fa-save"></i> Save Preferences
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Activity Tab -->
+                        <div id="profileActivity" class="profile-tab-content">
+                            <div class="activity-stats">
+                                <div class="activity-card">
+                                    <i class="fas fa-ticket-alt"></i>
+                                    <div>
+                                        <span class="activity-label">Total Bookings</span>
+                                        <span class="activity-value" id="totalBookings">0</span>
+                                    </div>
+                                </div>
+                                <div class="activity-card">
+                                    <i class="fas fa-clock"></i>
+                                    <div>
+                                        <span class="activity-label">Travel Time</span>
+                                        <span class="activity-value" id="totalTravelTime">0 min</span>
+                                    </div>
+                                </div>
+                                <div class="activity-card">
+                                    <i class="fas fa-exchange-alt"></i>
+                                    <div>
+                                        <span class="activity-label">Total Transfers</span>
+                                        <span class="activity-value" id="totalTransfers">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <h4><i class="fas fa-history"></i> Recent Activity</h4>
+                            <div class="activity-timeline" id="activityTimeline">
+                                <!-- Activity items will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Admin Section -->
+        <section id="admin" class="section">
+            <div class="container">
+                <h2><i class="fas fa-cog"></i> Admin Panel</h2>
+                
+                <div class="admin-tabs">
+                    <button class="tab-btn active" onclick="showAdminTab('stops')">Manage Stops</button>
+                    <button class="tab-btn" onclick="showAdminTab('routes')">Manage Routes</button>
+                    <button class="tab-btn" onclick="showAdminTab('graph')">Graph View</button>
+                    <button class="tab-btn" onclick="showAdminTab('upload')">Bulk Upload</button>
+                </div>
+
+                <div id="admin-stops" class="admin-tab active">
+                    <h3>Metro Stops</h3>
+                    <button class="btn-primary" onclick="showAddStopModal()">
+                        <i class="fas fa-plus"></i> Add New Stop
+                    </button>
+                    <div class="table-container">
+                        <table id="stopsTable">
+                            <thead>
+                                <tr>
+                                    <th>Stop ID</th>
+                                    <th>Name</th>
+                                    <th>Routes</th>
+                                    <th>Interchange</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stopsTableBody">
+                                <tr><td colspan="5">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="admin-routes" class="admin-tab">
+                    <h3>Metro Routes</h3>
+                    <button class="btn-primary" onclick="showAddRouteModal()">
+                        <i class="fas fa-plus"></i> Add New Route
+                    </button>
+                    <div class="table-container">
+                        <table id="routesTable">
+                            <thead>
+                                <tr>
+                                    <th>Route ID</th>
+                                    <th>Name</th>
+                                    <th>Color</th>
+                                    <th>Stops</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="routesTableBody">
+                                <tr><td colspan="5">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="admin-graph" class="admin-tab">
+                    <h3>Metro Network Graph</h3>
+                    <button class="btn-primary" onclick="refreshGraph()">
+                        <i class="fas fa-sync"></i> Refresh Graph
+                    </button>
+                    <div class="graph-visualization" id="graphVisualization">
+                        <div class="graph-placeholder">
+                            <i class="fas fa-project-diagram"></i>
+                            <p>Graph visualization will be displayed here</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="admin-upload" class="admin-tab">
+                    <h3>Bulk Upload Data</h3>
+                    <div class="upload-container">
+                        <div class="upload-box">
+                            <i class="fas fa-file-csv"></i>
+                            <p>Upload Stops CSV</p>
+                            <input type="file" id="stopsCsv" accept=".csv">
+                            <button class="btn-primary" onclick="uploadStops()">Upload</button>
+                        </div>
+                        <div class="upload-box">
+                            <i class="fas fa-file-csv"></i>
+                            <p>Upload Routes CSV</p>
+                            <input type="file" id="routesCsv" accept=".csv">
+                            <button class="btn-primary" onclick="uploadRoutes()">Upload</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeLoginModal()">&times;</span>
+            <h3>Welcome Back!</h3>
+            
+            <div class="social-login">
+                <button onclick="handleGoogleLogin()" class="btn-google">
+                    <i class="fab fa-google"></i>
+                    Continue with Google
+                </button>
+            </div>
+            
+            <div class="divider">
+                <span>or</span>
+            </div>
+            
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn-primary">Login with Email</button>
+            </form>
+            
+            <p class="auth-switch">
+                Don't have an account? 
+                <a href="#" onclick="showRegisterModal(); return false;">Register</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeRegisterModal()">&times;</span>
+            <h3>Create Account</h3>
+            
+            <div class="social-login">
+                <button onclick="handleGoogleLogin()" class="btn-google">
+                    <i class="fab fa-google"></i>
+                    Continue with Google
+                </button>
+            </div>
+            
+            <div class="divider">
+                <span>or</span>
+            </div>
+            
+            <form id="registerForm" onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="regName" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="regEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="tel" id="regPhone">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="regPassword" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label>Confirm Password</label>
+                    <input type="password" id="regConfirmPassword" required>
+                </div>
+                <button type="submit" class="btn-primary">Register with Email</button>
+            </form>
+            
+            <p class="auth-switch">
+                Already have an account? 
+                <a href="#" onclick="showLoginModal(); return false;">Login</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Stop Modal -->
+    <div id="stopModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeStopModal()">&times;</span>
+            <h3>Add/Edit Stop</h3>
+            <form id="stopForm" onsubmit="saveStop(event)">
+                <div class="form-group">
+                    <label>Stop ID</label>
+                    <input type="text" id="stopId" required>
+                </div>
+                <div class="form-group">
+                    <label>Stop Name</label>
+                    <input type="text" id="stopName" required>
+                </div>
+                <div class="form-group">
+                    <label>Routes (comma-separated)</label>
+                    <input type="text" id="stopRoutes" placeholder="R001,R002">
+                </div>
+                <button type="submit" class="btn-primary">Save Stop</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Route Modal -->
+    <div id="routeModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeRouteModal()">&times;</span>
+            <h3>Add/Edit Route</h3>
+            <form id="routeForm" onsubmit="saveRoute(event)">
+                <div class="form-group">
+                    <label>Route ID</label>
+                    <input type="text" id="routeId" required>
+                </div>
+                <div class="form-group">
+                    <label>Route Name</label>
+                    <input type="text" id="routeName" required>
+                </div>
+                <div class="form-group">
+                    <label>Route Color</label>
+                    <input type="color" id="routeColor" value="#FF0000">
+                </div>
+                <div class="form-group">
+                    <label>Stops (JSON array)</label>
+                    <textarea id="routeStops" rows="5" placeholder='[{"stopId":"S001","name":"Stop Name","order":1}]'></textarea>
+                </div>
+                <button type="submit" class="btn-primary">Save Route</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>
